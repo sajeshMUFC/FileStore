@@ -12,7 +12,7 @@
 #
 
 
-FROM golang:1.15-alpine3.14 AS builder
+FROM golang:1.17-alpine3.14 AS builder
 RUN apk update \
     && apk upgrade \
     && apk add --no-cache \

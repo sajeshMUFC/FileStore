@@ -32,7 +32,7 @@ func NewFileStoreService() *FileStore {
 	return &fsObj
 }
 
-func (fs *FileStore) AddFiles(c *gin.Context) (string, error) {
+func (fst *FileStore) AddFiles(c *gin.Context) (string, error) {
 	// Multipart form
 	var message string
 	var err error
@@ -43,11 +43,11 @@ func (fs *FileStore) AddFiles(c *gin.Context) (string, error) {
 	}
 	if files, found := form.File["add_file"]; found {
 		for _, file := range files {
-			if _, err := os.Stat(fs.FileVolumne + file.Filename); err == nil {
+			if _, err := os.Stat(fst.FileVolumne + file.Filename); err == nil {
 				message = message + file.Filename + " already exists \n"
 				continue
 			}
-			dst, err := os.Create(fs.FileVolumne + file.Filename)
+			dst, err := os.Create(fst.FileVolumne + file.Filename)
 			defer dst.Close()
 			fileContent, err := file.Open()
 			if err != nil {
@@ -63,7 +63,7 @@ func (fs *FileStore) AddFiles(c *gin.Context) (string, error) {
 				continue
 			}
 			// Copy the uploaded file to the created file on the filesystem
-			err = ioutil.WriteFile(fs.FileVolumne+file.Filename, data, 0644)
+			err = ioutil.WriteFile(fst.FileVolumne+file.Filename, data, 0644)
 			if err != nil {
 				message = message + file.Filename + " issue while saving \n"
 				continue
@@ -78,10 +78,10 @@ func (fs *FileStore) AddFiles(c *gin.Context) (string, error) {
 
 }
 
-func (fs *FileStore) ListFiles(c *gin.Context) (string, error) {
+func (fst *FileStore) ListFiles(c *gin.Context) (string, error) {
 	// Multipart form
 	var fileNames string
-	files, err := ioutil.ReadDir(fs.FileVolumne)
+	files, err := ioutil.ReadDir(fst.FileVolumne)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,16 +92,16 @@ func (fs *FileStore) ListFiles(c *gin.Context) (string, error) {
 
 }
 
-func (fs *FileStore) DeleteFile(c *gin.Context, fname string) (string, error) {
+func (fst *FileStore) DeleteFile(c *gin.Context, fname string) (string, error) {
 	// Multipart form
-	e := os.Remove(fs.FileVolumne + fname)
+	e := os.Remove(fst.FileVolumne + fname)
 	if e != nil {
 		return fname + " No such file found", errors.New("Failed to delete")
 	}
 	return fname + " successfully deleted the file", nil
 }
 
-func (fs *FileStore) UpdateFile(c *gin.Context) (string, error) {
+func (fst *FileStore) UpdateFile(c *gin.Context) (string, error) {
 	// Multipart form
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -120,9 +120,9 @@ func (fs *FileStore) UpdateFile(c *gin.Context) (string, error) {
 			}
 			fileContent.Close()
 			//if file exists
-			if _, err := os.Stat(fs.FileVolumne + file.Filename); err == nil {
+			if _, err := os.Stat(fst.FileVolumne + file.Filename); err == nil {
 				//read the file
-				freader, err := os.OpenFile(fs.FileVolumne+file.Filename, os.O_RDWR, 0644)
+				freader, err := os.OpenFile(fst.FileVolumne+file.Filename, os.O_RDWR, 0644)
 				if err != nil {
 					log.Fatalf("failed opening file: %s", err)
 					return file.Filename + "failed to update", errors.New("failed to update")
@@ -137,7 +137,7 @@ func (fs *FileStore) UpdateFile(c *gin.Context) (string, error) {
 				return file.Filename + "Updated successfully ", nil
 
 			}
-			err = ioutil.WriteFile(fs.FileVolumne+file.Filename, data, 0644)
+			err = ioutil.WriteFile(fst.FileVolumne+file.Filename, data, 0644)
 			if err != nil {
 				return file.Filename + " update failed \n", errors.New("update failed")
 
@@ -149,8 +149,8 @@ func (fs *FileStore) UpdateFile(c *gin.Context) (string, error) {
 	return "bad request", err
 }
 
-func (fs *FileStore) WordCountInFiles(c *gin.Context, word string) (string, error) {
-	files, err := ioutil.ReadDir(fs.FileVolumne)
+func (fst *FileStore) WordCountInFiles(c *gin.Context, word string) (string, error) {
+	files, err := ioutil.ReadDir(fst.FileVolumne)
 	if err != nil {
 		log.Fatal(err)
 		return "No files found", errors.New("No file")
@@ -160,7 +160,7 @@ func (fs *FileStore) WordCountInFiles(c *gin.Context, word string) (string, erro
 	var wg sync.WaitGroup
 	for _, file := range files {
 		wg.Add(1)
-		go fs.getCountByWord(word, file, fileWordCountCh, &wg)
+		go fst.getCountByWord(word, file, fileWordCountCh, &wg)
 	}
 	// close the channel in the background
 	go func() {
@@ -176,9 +176,9 @@ func (fs *FileStore) WordCountInFiles(c *gin.Context, word string) (string, erro
 
 }
 
-func (fs *FileStore) getCountByWord(word string, file fs.FileInfo, ch chan<- int, wg *sync.WaitGroup) {
+func (fst *FileStore) getCountByWord(word string, file fs.FileInfo, ch chan<- int, wg *sync.WaitGroup) {
 	defer wg.Done()
-	f, err := os.Open(fs.FileVolumne + file.Name())
+	f, err := os.Open(fst.FileVolumne + file.Name())
 	if err != nil {
 		log.Println("err: ", err)
 		ch <- 0
