@@ -211,7 +211,9 @@ func (fst *FileStore) FreqWordCountInFiles(c *gin.Context, limit int, sortOrder 
 	var AllFilefreqWords []kv
 	var wg sync.WaitGroup
 	//loop over all the files
-	for _, file := range files {
+	for i, file := range files {
+		fmt.Println("====", i)
+
 		wg.Add(1)
 		go fst.getFreqWordCount(file, freqWords, &wg, limit, sortOrder)
 	}
@@ -233,7 +235,11 @@ func (fst *FileStore) FreqWordCountInFiles(c *gin.Context, limit int, sortOrder 
 	}
 	var results string
 	looplimit := limit
+	/// if limit is more then objects found
 	if limit > len(AllFilefreqWords) {
+		looplimit = len(AllFilefreqWords)
+	}
+	if limit == 0 {
 		looplimit = len(AllFilefreqWords)
 	}
 	for i := 0; i < looplimit; i++ {
@@ -252,6 +258,7 @@ type kv struct {
 	Value int
 }
 
+//get
 func (fst *FileStore) getFreqWordCount(file fs.FileInfo, ch chan<- []kv, wg *sync.WaitGroup, limit int, sortOrder string) {
 	defer wg.Done()
 	f, err := os.Open(fst.FileVolumne + file.Name())
@@ -276,8 +283,9 @@ func (fst *FileStore) getFreqWordCount(file fs.FileInfo, ch chan<- []kv, wg *syn
 	var wordFreqs []kv
 	for v, i := range words {
 		wordFreqs = append(wordFreqs, kv{v, i})
-	}
+		fmt.Println(v)
 
+	}
 	ch <- wordFreqs
 
 }
