@@ -3,6 +3,7 @@ package handler
 import (
 	filestore "http-filestore/platform/file-ops"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -56,6 +57,33 @@ func FileWordCountHandler(fs *filestore.FileStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		word := c.Param("search")
 		res, err := fs.WordCountInFiles(c, word)
+		if err != nil {
+			c.String(http.StatusInternalServerError, res)
+		} else {
+			c.String(http.StatusOK, res)
+		}
+	}
+}
+
+func FileFreqWordCountHandler(fs *filestore.FileStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var limitParam int
+		var sortParam string
+		if queryParam, ok := c.GetQuery("limit"); ok {
+			if queryParam != "" {
+				limitParam, _ = strconv.Atoi(queryParam)
+			} else {
+				limitParam = 10
+			}
+		}
+		if queryParam, ok := c.GetQuery("sort"); ok {
+			if queryParam != "" {
+				sortParam = queryParam
+			} else {
+				sortParam = "asc"
+			}
+		}
+		res, err := fs.FreqWordCountInFiles(c, limitParam, sortParam)
 		if err != nil {
 			c.String(http.StatusInternalServerError, res)
 		} else {

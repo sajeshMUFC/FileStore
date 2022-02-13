@@ -3,10 +3,13 @@ package filestore
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,18 +23,20 @@ type Service interface {
 
 type FileStore struct {
 	FileVolumne string
-}
-type Response struct {
-	status  string
-	message string
+	CharRegex   *regexp.Regexp
 }
 
 // Init the file mount
 func NewFileStoreService() *FileStore {
-	fsObj := FileStore{FileVolumne: "./saved/"}
+	fsObj := FileStore{
+		FileVolumne: "./saved/",
+		CharRegex:   regexp.MustCompile("[a-zA-Z']+"),
+	}
+
 	return &fsObj
 }
 
+//AddFiles uploads all the files to the specified volume
 func (fst *FileStore) AddFiles(c *gin.Context) (string, error) {
 	// Multipart form
 	var message string
@@ -78,8 +83,8 @@ func (fst *FileStore) AddFiles(c *gin.Context) (string, error) {
 
 }
 
+//ListFiles displays all the file from OS
 func (fst *FileStore) ListFiles(c *gin.Context) (string, error) {
-	// Multipart form
 	var fileNames string
 	files, err := ioutil.ReadDir(fst.FileVolumne)
 	if err != nil {
@@ -92,8 +97,8 @@ func (fst *FileStore) ListFiles(c *gin.Context) (string, error) {
 
 }
 
+//DeleteFile removes the file from OS
 func (fst *FileStore) DeleteFile(c *gin.Context, fname string) (string, error) {
-	// Multipart form
 	e := os.Remove(fst.FileVolumne + fname)
 	if e != nil {
 		return fname + " No such file found", errors.New("Failed to delete")
@@ -194,4 +199,85 @@ func (fst *FileStore) getCountByWord(word string, file fs.FileInfo, ch chan<- in
 		}
 	}
 	ch <- count
+}
+
+func (fst *FileStore) FreqWordCountInFiles(c *gin.Context, limit int, sortOrder string) (string, error) {
+	files, err := ioutil.ReadDir(fst.FileVolumne)
+	if err != nil {
+		log.Fatal(err)
+		return "No files found", errors.New("No file")
+	}
+	freqWords := make(chan []kv)
+	var AllFilefreqWords []kv
+	var wg sync.WaitGroup
+	//loop over all the files
+	for _, file := range files {
+		wg.Add(1)
+		go fst.getFreqWordCount(file, freqWords, &wg, limit, sortOrder)
+	}
+	go func() {
+		wg.Wait()
+		close(freqWords)
+	}()
+	for fileFreqWord := range freqWords {
+		AllFilefreqWords = append(AllFilefreqWords, fileFreqWord...)
+	}
+	if sortOrder == "desc" {
+		sort.Slice(AllFilefreqWords, func(i, j int) bool {
+			return AllFilefreqWords[i].Value > AllFilefreqWords[j].Value
+		})
+	} else {
+		sort.Slice(AllFilefreqWords, func(i, j int) bool {
+			return AllFilefreqWords[i].Value < AllFilefreqWords[j].Value
+		})
+	}
+	var results string
+	looplimit := limit
+	if limit > len(AllFilefreqWords) {
+		looplimit = len(AllFilefreqWords)
+	}
+	for i := 0; i < looplimit; i++ {
+		fmt.Println(AllFilefreqWords[i])
+		intValue := strconv.Itoa(AllFilefreqWords[i].Value)
+		results = results + AllFilefreqWords[i].Key + " - " + intValue + "\n"
+	}
+
+	return results, nil
+
+}
+
+//for sorting based on value
+type kv struct {
+	Key   string
+	Value int
+}
+
+func (fst *FileStore) getFreqWordCount(file fs.FileInfo, ch chan<- []kv, wg *sync.WaitGroup, limit int, sortOrder string) {
+	defer wg.Done()
+	f, err := os.Open(fst.FileVolumne + file.Name())
+	if err != nil {
+		log.Println("err: ", err)
+		ch <- []kv{}
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	// holds all the words in the file with respective count
+	words := make(map[string]int)
+	scanner.Split(bufio.ScanWords)
+	//read each line
+	for scanner.Scan() {
+		wordFromFile := scanner.Text()
+		//get only words
+		matches := fst.CharRegex.FindAllString(wordFromFile, -1)
+		for _, match := range matches {
+			words[match]++
+		}
+	}
+	var wordFreqs []kv
+	for v, i := range words {
+		wordFreqs = append(wordFreqs, kv{v, i})
+	}
+
+	ch <- wordFreqs
+
 }

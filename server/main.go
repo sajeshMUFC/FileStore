@@ -31,10 +31,10 @@ type App struct {
 }
 
 func main() {
-	log.Println("starting Inspection manager")
+	log.Println("starting file store http server")
 
 	a, err := NewApp()
-	a.port = 8002
+	a.port = 8000
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,6 +55,7 @@ func main() {
 		v1.DELETE("/:filename", handler.FileDeleteHandler(fstoreservice))
 		v1.PUT("", handler.FileUpdateHandler(fstoreservice))
 		v1.GET("/:search", handler.FileWordCountHandler(fstoreservice))
+		v1.GET("/freqword", handler.FileFreqWordCountHandler(fstoreservice))
 	}
 
 	router.Run(fmt.Sprintf("%v:%v", a.addr, a.port))
