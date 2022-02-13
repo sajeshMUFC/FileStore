@@ -54,6 +54,7 @@ func main() {
 		v1.GET("", handler.FileListHandler(fstoreservice))
 		v1.DELETE("/:filename", handler.FileDeleteHandler(fstoreservice))
 		v1.PUT("", handler.FileUpdateHandler(fstoreservice))
+		v1.GET("/:search", handler.FileWordCountHandler(fstoreservice))
 	}
 
 	router.Run(fmt.Sprintf("%v:%v", a.addr, a.port))

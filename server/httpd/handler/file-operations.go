@@ -51,3 +51,15 @@ func FileUpdateHandler(fs *filestore.FileStore) gin.HandlerFunc {
 		}
 	}
 }
+
+func FileWordCountHandler(fs *filestore.FileStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		word := c.Param("search")
+		res, err := fs.WordCountInFiles(c, word)
+		if err != nil {
+			c.String(http.StatusInternalServerError, res)
+		} else {
+			c.String(http.StatusOK, res)
+		}
+	}
+}

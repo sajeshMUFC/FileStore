@@ -1,10 +1,15 @@
 package filestore
 
 import (
+	"bufio"
 	"errors"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
+	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 )
@@ -78,7 +83,7 @@ func (fs *FileStore) ListFiles(c *gin.Context) (string, error) {
 	var fileNames string
 	files, err := ioutil.ReadDir(fs.FileVolumne)
 	if err != nil {
-		log.Fatal("====", err)
+		log.Fatal(err)
 	}
 	for _, file := range files {
 		fileNames = fileNames + " \n " + file.Name()
@@ -142,4 +147,51 @@ func (fs *FileStore) UpdateFile(c *gin.Context) (string, error) {
 		}
 	}
 	return "bad request", err
+}
+
+func (fs *FileStore) WordCountInFiles(c *gin.Context, word string) (string, error) {
+	files, err := ioutil.ReadDir(fs.FileVolumne)
+	if err != nil {
+		log.Fatal(err)
+		return "No files found", errors.New("No file")
+	}
+	totalCount := 0
+	fileWordCountCh := make(chan int)
+	var wg sync.WaitGroup
+	for _, file := range files {
+		wg.Add(1)
+		go fs.getCountByWord(word, file, fileWordCountCh, &wg)
+	}
+	// close the channel in the background
+	go func() {
+		wg.Wait()
+		close(fileWordCountCh)
+	}()
+	// read from channel as they come in until its closed
+	for countRes := range fileWordCountCh {
+		totalCount = totalCount + countRes
+	}
+	log.Println("totalCount: ", totalCount)
+	return strconv.Itoa(totalCount), nil
+
+}
+
+func (fs *FileStore) getCountByWord(word string, file fs.FileInfo, ch chan<- int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	f, err := os.Open(fs.FileVolumne + file.Name())
+	if err != nil {
+		log.Println("err: ", err)
+		ch <- 0
+	}
+	defer f.Close()
+	count := 0
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		wordFromFile := scanner.Text()
+		if strings.ToLower(wordFromFile) == strings.ToLower(word) {
+			count++
+		}
+	}
+	ch <- count
 }
