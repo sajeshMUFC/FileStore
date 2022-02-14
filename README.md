@@ -30,3 +30,9 @@ docker run -p 8000:8000 file_store_http_server
 cd FileStore/cmd
 ./store <commands>
 ```
+
+
+## REFERENCES
+
+Go CLI -  https://www.rapid7.com/blog/post/2016/08/04/build-a-simple-cli-tool-with-golang/
+Go GIN Framework - https://github.com/gin-gonic/gin
