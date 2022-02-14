@@ -34,5 +34,5 @@ cd FileStore/cmd
 
 ## REFERENCES
 
-Go CLI -  https://www.rapid7.com/blog/post/2016/08/04/build-a-simple-cli-tool-with-golang/
-Go GIN Framework - https://github.com/gin-gonic/gin
+    Go CLI -  https://www.rapid7.com/blog/post/2016/08/04/build-a-simple-cli-tool-with-golang/
+    Go GIN Framework - https://github.com/gin-gonic/gin
