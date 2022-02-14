@@ -6,12 +6,12 @@ Provide a CLI client to perform actions on the HTTP Server on file objects .
 - Description : File Store CLI - Let's you add , delete ,update ,get a file and search by keyword !
 - USAGE: store command [arguments...]
 - ### COMMANDS: 
-            - ls            List all the files<br/> 
-            - rm            Removes the file <br/>
-            - add           Upload Multiple Files<br/>
-            - update        Update the content of given file<br/>
-            - wc            Counts the occurances of given word in all the files <br/>
-            - freq-words    [--n <limit> order <desc>]Displays the most frequent words/less frequent used words based on the limit  <br/>
+            - ls            List all the files
+            - rm            Removes the file
+            - add           Upload Multiple Files
+            - update        Update the content of given file
+            - wc            Counts the occurances of given word in all the files
+            - freq-words    [--n <limit> order <desc>]Displays the most frequent words/less frequent used words based on the limit
 
 
 

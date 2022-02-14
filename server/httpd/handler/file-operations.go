@@ -72,8 +72,6 @@ func FileFreqWordCountHandler(fs *filestore.FileStore) gin.HandlerFunc {
 		if queryParam, ok := c.GetQuery("limit"); ok {
 			if queryParam != "" {
 				limitParam, _ = strconv.Atoi(queryParam)
-			} else {
-				limitParam = 10
 			}
 		}
 		if queryParam1, ok := c.GetQuery("sort"); ok {
